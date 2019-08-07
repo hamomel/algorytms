@@ -1,0 +1,63 @@
+<input> 20 73 97 143 66 34 77 99 55 64 09 69 86 64 87 45 97 45 76 35 06
+
+;1 - конец массива
+;2 - конец отсортированного массива
+;3 - итератор
+;4 - temp
+
+read 1
+load 1
+jz end
+
+load:
+  add =4
+  read *0
+  sub =5
+  jgtz load
+
+load 1
+add =4
+store 1
+store 2
+store 3
+
+iterate:
+  load 3
+  sub =4
+  jgtz continue
+  load 2
+  sub =1
+  store 2
+  store 3
+continue:
+  load 3
+  sub =4
+  jz print
+  add =3
+  store 3
+  load *0
+  sub *2
+  jgtz iterate
+  jz iterate
+  jmp swap
+
+swap:
+  load *2
+  store 4  ; temp
+  load *3
+  store *2
+  load 4
+  store *3
+  jmp iterate
+
+print:
+  load 1
+  sub =4
+  print_loop:
+    add =4
+    write *0
+    sub =5
+    jgtz print_loop
+end:
+halt
+    

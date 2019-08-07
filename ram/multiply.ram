@@ -1,0 +1,35 @@
+<input> 500 05
+
+read 1
+load 1
+jz print_zero
+read 2
+load 2
+store 3
+jz print
+sub 1
+jz calculate
+jgtz calculate
+load 1
+store 3
+load 2
+store 1
+load 3
+store 2
+
+calculate:
+load 1
+sub =1
+jz print
+store 1
+load 2
+add 3
+store 2
+jmp calculate
+
+print_zero:
+load =0
+store 2
+print:
+write 2
+halt
