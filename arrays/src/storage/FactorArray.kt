@@ -3,9 +3,9 @@ package storage
 import java.lang.IndexOutOfBoundsException
 import java.util.Arrays
 
-class VectorArray<T>(private val vector: Int) : IArray<T> {
+class FactorArray<T>(private val factor: Int = 50) : IArray<T> {
 
-    private var arr = Array<Any?>(vector) { Unit }
+    private var arr = Array<Any?>(10) { Unit }
     private var size = 0
 
     override fun add(item: T) {
@@ -15,7 +15,8 @@ class VectorArray<T>(private val vector: Int) : IArray<T> {
     }
 
     private fun resize() {
-        arr = Arrays.copyOf(arr, arr.size + vector)
+        val newSize = arr.size * (1 + factor.toFloat() / 100)
+        arr = Arrays.copyOf(arr, newSize.toInt())
     }
 
     override fun size(): Int = size
@@ -51,12 +52,12 @@ class VectorArray<T>(private val vector: Int) : IArray<T> {
         if (index >= size || index < 0) throw IndexOutOfBoundsException("index = $index")
 
         val item = arr[index]
-
         for (i in index until size - 2) {
             arr[i] = arr[i + 1]
         }
 
         size--
+
         return item as T
     }
 

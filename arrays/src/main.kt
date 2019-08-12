@@ -1,69 +1,148 @@
+import storage.NativeArray
+import storage.FactorArray
 import storage.IArray
+import storage.LinkedArray
+import storage.MatrixArray
 import storage.SingleArray
+import storage.SpacedArray
 import storage.VectorArray
+import java.io.File
+import java.io.FileOutputStream
+import java.io.OutputStream
+import java.io.PrintStream
+import java.util.Date
+import java.util.concurrent.CountDownLatch
+import kotlin.concurrent.thread
+import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 fun main() {
-    val simpleArray = SingleArray<String>()
-    val vectorArray = VectorArray<String>(10)
+    val date = Date().toString()
+    val outputFile = File(System.getProperty("user.dir"), "table-$date.txt")
+    val output = PrintStream(FileOutputStream(outputFile))
 
-    testAdd(simpleArray, 100_000)
-    testAdd(vectorArray, 100_000)
+        var count = 1000
+    while (count <= 1_000_000) {
+        val latch = CountDownLatch(7)
 
-    testGet(simpleArray, 100_000)
-    testGet(vectorArray, 100_000)
+        val table = Array<Array<String>>(7) {
+            Array<String>(5) { "" }
+        }
 
-    testSet(simpleArray, 100_000)
-    testSet(vectorArray, 100_000)
+        val arrays = arrayOf(
+            SingleArray<String>(),
+            VectorArray<String>(10),
+            FactorArray<String>(),
+            MatrixArray<String>(100),
+            LinkedArray<String>(),
+            SpacedArray<String>(),
+            NativeArray<String>()
+        )
 
-    testRemove(simpleArray, 100_000)
-    testRemove(vectorArray, 100_000)
-}
+        for (i in 0 until arrays.size) {
+            thread {
+                val array = arrays[i]
+                println("calculate $count for ${array::class.java.simpleName}")
+                val row = table[i]
+                val time = measureTimeMillis {
+                    row[0] = array::class.java.simpleName
+                    row[1] = testAdd(array, count).toString()
+                    row[2] = testGet(array, count).toString()
+                    row[3] = testSet(array, count).toString()
+                    row[4] = testRemove(array, count).toString()
+                }
 
-fun printArray(arr: IArray<String>) {
-    print("[ ")
-    for (i in 0 until arr.size()) {
-        print(" ${arr.get(i)}")
+                println("finished calculation $count for ${array::class.java.simpleName} in $time ms")
+                latch.countDown()
+            }
+        }
+
+        latch.await()
+        printResult(count.toString(), table, output)
+        count *= 10
     }
-    println(" ]")
 }
 
-fun testAdd(arr: IArray<String>, count: Int) {
-    val time = measureTimeMillis {
+private fun printResult(count: String, table: Array<Array<String>>, output: PrintStream) {
+    val console = System.out
+    System.setOut(output)
+
+    val tests = arrayOf("add", "get", "midAdd", "remove")
+    val maxLength = calculateMaxLength(table) + 1
+
+    printLine((maxLength + 2) * 5)
+    print("${addSpaces(count, maxLength)} |")
+    for (test in tests) {
+        print("${addSpaces(test, maxLength)} |")
+    }
+    println()
+
+    for (row in table) {
+        for (value in row) {
+            print("${addSpaces(value, maxLength)} |")
+        }
+        println()
+    }
+    printLine((maxLength + 2) * 5)
+
+    System.setOut(console)
+}
+
+fun calculateMaxLength(table: Array<Array<String>>): Int {
+    var maxLength = 8
+    for (row in table) {
+        for (value in row) {
+            if (value.length > maxLength) maxLength = value.length
+        }
+    }
+
+    return maxLength
+}
+
+fun printLine(length: Int) {
+    for (i in 0..length) print("—")
+    println()
+}
+
+fun addSpaces(string: String, resLingth: Int): String =
+    buildString {
+        for (i in 1..(resLingth - string.length)) {
+            append(" ")
+        }
+        append(string)
+    }
+
+fun testAdd(arr: IArray<String>, count: Int): Long {
+    return measureTimeMillis {
         for (i in 0 until count) {
             arr.add("$i")
         }
     }
-
-    println("add ${arr::class.java.simpleName} - $time")
 }
 
-fun testGet(arr: IArray<String>, count: Int) {
-    val time = measureTimeMillis {
+fun testGet(arr: IArray<String>, count: Int): Long {
+    return measureTimeMillis {
         for (i in 0 until count) {
             arr.get(i)
         }
     }
-
-    println("get ${arr::class.java.simpleName} - $time")
 }
 
-fun testSet(arr: IArray<String>, count: Int) {
-    val time = measureTimeMillis {
-        for (i in 0 until count) {
-            arr.add("$i", i)
+fun testSet(arr: IArray<String>, count: Int): Long {
+    return measureTimeMillis {
+        for (i in 1 until count) {
+            var random = Random.nextInt(arr.size() - 1)
+            if (random == 0) random++
+            arr.add("$i", random)
         }
     }
-
-    println("set ${arr::class.java.simpleName} - $time")
 }
 
-fun testRemove(arr: IArray<String>, count: Int) {
-    val time = measureTimeMillis {
-        for (i in count downTo 0) {
-            arr.remove(i)
+fun testRemove(arr: IArray<String>, count: Int): Long {
+    return measureTimeMillis {
+        for (i in 1 until count) {
+            val random = Random.nextInt(arr.size() - 1)
+            arr.remove(random)
         }
     }
-
-    println("remove ${arr::class.java.simpleName} - $time")
 }
