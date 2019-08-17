@@ -12,8 +12,6 @@
 # auto-import.
 gradle/
 .gradle/
-gradlew
-gradlew.bat
 #.idea/modules.xml
 #.idea/*.iml
 #.idea/modules
