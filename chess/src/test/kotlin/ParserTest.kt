@@ -1,7 +1,7 @@
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class FenParserTest {
+class ParserTest {
 
     val cases = TestCases.getCasesFor("1743.1.FEN - ASCII")
 //    val cases = TestCases.getCasesFor("1745.1.Сборка и разборка")
@@ -60,7 +60,7 @@ class FenParserTest {
         val case = cases.first { it.name == "test.$testNum.in" }
         val check = cases.first { it.name == "test.$testNum.out" }
 
-        val board = FenParser.parse(case.readText())
+        val board = Board.fromFen(case.readText())
         val out = check.readText()
         println(board.toString())
         println(out)
