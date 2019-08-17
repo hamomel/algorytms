@@ -1,0 +1,68 @@
+1.FEN - BITS *
+
+Дано расположение шахматных фигур на доске в FEN-нотации.
+(дана только первая часть fen-кода)
+
+Подробнее о формате нотации см. <a href="https://ru.wikipedia.org/wiki/%D0%9D%D0%BE%D1%82%D0%B0%D1%86%D0%B8%D1%8F_%D0%A4%D0%BE%D1%80%D1%81%D0%B0%D0%B9%D1%82%D0%B0_%E2%80%94_%D0%AD%D0%B4%D0%B2%D0%B0%D1%80%D0%B4%D1%81%D0%B0" target="_blank">здесь</a>.
+
+Например, начальная позиция записывается так:
+<span class='prog kwd'>rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR</span>
+
+Перевести её в Bitboard Board-Definition формат.
+Подробнее см. <a href="https://chessprogramming.wikispaces.com/Bitboard+Board-Definition" target="_blank">здесь</a>.
+<div class='row'>
+<div class='col-xs-12 col-md-4'><img class='width-100' src='https://chessprogramming.wikispaces.com/file/view/lerf.JPG/423297712/lerf.JPG' />
+</div>
+<div class='col-xs-12 col-md-8'>
+в 64-битном числе хранятся биты каждой клетки шахматной доски:
+поле <strong><span class='prog'>a1</span></strong> соответствует нулевому биту и равно <span class='prog'>2<sup>0</sup> = 1</span>
+поле  <strong><span class='prog'>b1</span></strong> соответствует первому  биту и равно <span class='prog'>2<sup>1</sup> = 2</span>
+поле  <strong><span class='prog'>h1</span></strong> соответствует седьмому биту и равно  <span class='prog'>2<sup>7</sup> = 128</span>
+поле  <strong><span class='prog'>a2</span></strong> соответствует восьмому биту и равно  <span class='prog'>2<sup>8</sup> = 256</span>.
+поле  <strong><span class='prog'>h8</span></strong> соответствует 63-ему биту и равно  <span class='prog'>2<sup>63</sup> = 9 223 372 036 854 775 808</span>.
+</div></div>
+
+
+Для хранения позиции использовать массив <span class='prog'>board</span> 64-битных беззнаковых целых чисел:
+   <span class='prog'>ulong [12] board</span>
+
+Каждый элемент массива <span class='prog'>board</span> хранит битовую маску фигур (0-нет, 1-есть) в порядке перечисления Piece:
+<div class='row'>
+<div class='col-xs-12 col-md-6'><img class='width-100' src="https://chessprogramming.wikispaces.com/file/view/bitboard.gif/158504035/bitboard.gif">
+</div>
+<div class='col-xs-12 col-md-6 prog'>
+<span class='kwd'>enum</span> <span class='blu'>Piece</span>
+{
+   whitePawns,
+   whiteKnights,
+   whiteBishops,
+   whiteRooks,
+   whiteQueens,
+   whiteKing,
+ 
+   blackPawns,
+   blackKnights,
+   blackBishops,
+   blackRooks,
+   blackQueens,
+   blackKing
+}</div></div>
+
+<strong>Начальные данные</strong>: строка символов - позиция в FEN нотации
+<strong>Вывод результата</strong>: 12 беззнаковых 64-битных целых чисел, по одному на каждой строке.
+
+<strong>Комментарий к демо-тесту</strong>:
+первая строчка - битбоард для расположения белых пешек - поля <span class='prog'><strong>a2 b2 ... h2</strong></span>
+ - равно <span class='prog'>2<sup>8</sup> + 2<sup>9</sup> + ... + 2<sup>15</sup> = 256 + 512 + ... + 32768 = 65280</span>.
+вторая строчка - битбоард для расположения белых коней - поля <span class='prog'><strong>b1 g1</strong></span> - равно <span class='prog'>2<sup>1</sup> + 2<sup>6</sup> = 2 + 64 = 66</span>.
+третья строчка - битбоард для расположения белых слонов - поля <span class='prog'><strong>c1 f1</strong></span> - равно <span class='prog'>2<sup>2</sup> + 2<sup>5</sup> = 4 + 32 = 36</span>.
+четвёртая строчка - битбоард для расположения белых ладей - поля <span class='prog'><strong>a1 h1</strong></span> - равно <span class='prog'>2<sup>0</sup> + 2<sup>7</sup> = 1 + 128 = 129</span>.
+пятая строчка - битбоард для расположения белых ферзей - поле <span class='prog'><strong>d1</strong></span> - равно <span class='prog'>2<sup>3</sup> = 8</span>.
+шестая строчка - битбоард для расположения белого короля - поле <span class='prog'><strong>e1</strong></span> - равно <span class='prog'>2<sup>4</sup> = 16</span>.
+
+
+<strong>Полезные ссылки</strong>:
+<a href="https://chessprogramming.wikispaces.com/Bitboards" target="_blank">Bitboards</a>
+<a href="https://chessprogramming.wikispaces.com/Square+Mapping+Considerations" target="_blank">Square Mapping Considerations</a>
+
+http://www.talkchess.com/forum3/viewtopic.php?t=39053
