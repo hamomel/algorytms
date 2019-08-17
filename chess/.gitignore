@@ -14,11 +14,11 @@ gradle/
 .gradle/
 gradlew
 gradlew.bat
-.idea/modules.xml
-.idea/*.iml
-.idea/modules
-*.iml
-*.ipr
+#.idea/modules.xml
+#.idea/*.iml
+#.idea/modules
+#*.iml
+#*.ipr
 
 # File-based project format
 *.iws
