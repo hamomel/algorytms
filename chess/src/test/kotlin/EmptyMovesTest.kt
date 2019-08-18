@@ -1,9 +1,8 @@
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Test
 
-class UnpacserTest {
-
-    val cases = TestCases.getCasesFor("1745.1.Сборка и разборка")
+class EmptyMovesTest {
+    val cases = TestCases.getCasesFor("3694.1.Счётчик полуходов")
 
     @Test
     fun test_0() {
@@ -56,19 +55,17 @@ class UnpacserTest {
     }
 
     private fun testParser(testNum: Int) {
+        println("test $testNum")
+
         val case = cases.first { it.name == "test.$testNum.in" }
         val check = cases.first { it.name == "test.$testNum.out" }
 
         val input = case.readText()
-        val board = Board.fromFen(input)
         val out = check.readText()
-        val outBoard = Board.fromFen(board.toFen())
-        println("test $testNum")
+        val board = Mover.fromFen(input)
         println(input)
-        println(board.toFen())
-        println(board)
-        println(outBoard)
+        println(out)
 
-        assertEquals(out.trimEnd().replace("\r\n", "\n"), board.toFen())
+        Assert.assertEquals(out.trimEnd(), board.toFen())
     }
 }

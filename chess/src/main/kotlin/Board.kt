@@ -4,9 +4,9 @@ private const val VERTICALS = "    a b c d e f g h"
 data class Board(
     var disposition: Array<Array<Piece?>>,
     val isWhiteNext: Boolean,
-    val whiteCastlings: Array<Boolean>,
-    val blackCastlings: Array<Boolean>,
-    val beatenPath: String,
+    val whiteCastlings: Castling,
+    val blackCastlings: Castling,
+    val beatenPath: Cell?,
     val emptyMoves: Int,
     val moveNum: Int
 ) {
@@ -23,7 +23,7 @@ data class Board(
                 emptyMove) = splitted
             val moveNum = splitted[5].trim()
 
-            val lines = disposition.split("/")
+            val lines = disposition.split("/").reversed()
             val board = Board.getEmpty()
 
             lines.forEachIndexed { index, line ->
@@ -51,58 +51,72 @@ data class Board(
                 }
             }
 
+            val beatenPath = if (onPass.isBlank() || onPass == "-") {
+                null
+            } else {
+                Cell.fromString(onPass)
+            }
+
             return Board(
                 disposition = board,
                 isWhiteNext = whoMoves.toLowerCase() == "w",
-                whiteCastlings = arrayOf(castling.contains("K"), castling.contains("Q")),
-                blackCastlings = arrayOf(castling.contains("k"), castling.contains("q")),
-                beatenPath = onPass.trim(),
+                whiteCastlings = Castling(castling.contains("K"), castling.contains("Q")),
+                blackCastlings = Castling(castling.contains("k"), castling.contains("q")),
+                beatenPath = beatenPath,
                 emptyMoves = emptyMove.trim().toInt(),
-                moveNum = moveNum.toInt())
+                moveNum = moveNum.toInt()
+            )
         }
-
-        fun toFen(board: Board): String =
-            buildString {
-                board.disposition.forEachIndexed { index, line ->
-                    var spaces = 0
-                    line.forEach {
-                        it?.let {
-                            if (spaces > 0) append(spaces)
-                            append(it.letter)
-                            spaces = 0
-                        } ?: spaces++
-                    }
-                    if (spaces > 0) append(spaces)
-                    if (index < 7) append("/")
-                }
-                append(" ")
-                append(if (board.isWhiteNext) "w " else "b ")
-
-                if (!board.whiteCastlings[0] &&
-                    !board.whiteCastlings[1] &&
-                    !board.blackCastlings[0] &&
-                    !board.blackCastlings[1]) {
-                    append("-")
-                } else {
-                    if (board.whiteCastlings[0]) append("K")
-                    if (board.whiteCastlings[1]) append("Q")
-                    if (board.blackCastlings[0]) append("k")
-                    if (board.blackCastlings[1]) append("q")
-                }
-                append(" ")
-                append(if (board.beatenPath.isNotEmpty()) board.beatenPath else "-")
-                append(" ")
-                append(board.emptyMoves)
-                append(" ")
-                append(board.moveNum)
-            }
     }
+
+    fun getPieceOnCell(cell: Cell): Piece? = disposition[cell.number][cell.letter]
+
+    fun move(from: Cell, to: Cell) {
+        disposition[to.number][to.letter] = getPieceOnCell(from)
+    }
+
+    fun toFen(): String =
+        buildString {
+            disposition.reversed().forEachIndexed { index, line ->
+                var spaces = 0
+                line.forEach {
+                    it?.let {
+                        if (spaces > 0) append(spaces)
+                        append(it.letter)
+                        spaces = 0
+                    } ?: spaces++
+                }
+                if (spaces > 0) append(spaces)
+                if (index < 7) append("/")
+            }
+            append(" ")
+            append(if (isWhiteNext) "w " else "b ")
+
+            if (!whiteCastlings.isShort &&
+                !whiteCastlings.isLong &&
+                !blackCastlings.isShort &&
+                !blackCastlings.isLong
+            ) {
+                append("-")
+            } else {
+                if (whiteCastlings.isShort) append("K")
+                if (whiteCastlings.isLong) append("Q")
+                if (blackCastlings.isShort) append("k")
+                if (blackCastlings.isLong) append("q")
+            }
+            append(" ")
+            append(beatenPath?.let { it } ?: "-")
+            append(" ")
+            append(emptyMoves)
+            append(" ")
+            append(moveNum)
+        }
 
     override fun toString(): String =
         buildString {
             append(HEADER)
             append("\n")
-            disposition.forEachIndexed { index, line ->
+            disposition.reversed().forEachIndexed { index, line ->
                 val lineNum = 8 - index
                 append("$lineNum | ")
                 line.forEach { piece ->
@@ -149,8 +163,13 @@ data class Board(
         BLACK_KNIGHT('n'),
         BLACK_BISHOP('b');
 
+        fun isSameType(other: Piece): Boolean =
+            other.letter.toLowerCase() == this.letter.toLowerCase()
+
         companion object {
             fun getByLetter(letter: Char): Piece = values().first { it.letter == letter }
         }
     }
+
+    data class Castling(val isShort: Boolean, val isLong: Boolean)
 }
