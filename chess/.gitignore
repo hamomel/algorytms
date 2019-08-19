@@ -10,7 +10,9 @@
 # When using Gradle or Maven with auto-import, you should exclude module files,
 # since they will be recreated, and may cause churn.  Uncomment if using
 gradle/
-.gradle
+.gradle/
+gradlew
+gradlew.bat
 .idea/workspace.xml
 # auto-import.
 # .idea/modules.xml
