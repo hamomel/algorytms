@@ -30,6 +30,17 @@ class SingleArray<T> : IArray<T> {
         arr[index] = item
     }
 
+    fun singleCopyAdd(item: T, index: Int) {
+        if (index > arr.size || index < 0) throw IndexOutOfBoundsException("index = $index")
+
+        val newArr = arrayOfNulls<Any>(arr.size + 1)
+        System.arraycopy(arr, 0, newArr, 0, index)
+        System.arraycopy(arr, index, newArr, index + 1, arr.size - index)
+        newArr[index] = item
+
+        arr = newArr
+    }
+
     private fun resize() {
         arr = Arrays.copyOf(arr, arr.size + 1)
     }

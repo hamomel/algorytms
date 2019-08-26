@@ -1,66 +1,74 @@
-import storage.NativeArray
-import storage.FactorArray
 import storage.IArray
-import storage.LinkedArray
-import storage.MatrixArray
 import storage.SingleArray
-import storage.SpacedArray
-import storage.VectorArray
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
 import java.io.PrintStream
-import java.util.Date
-import java.util.concurrent.CountDownLatch
-import kotlin.concurrent.thread
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
 fun main() {
-    val date = Date().toString()
-    val outputFile = File(System.getProperty("user.dir"), "table-$date.txt")
-    val output = PrintStream(FileOutputStream(outputFile))
+//    val date = Date().toString()
+//    val outputFile = File(System.getProperty("user.dir"), "table-$date.txt")
+//    val output = PrintStream(FileOutputStream(outputFile))
+//
+//        var count = 1000
+//    while (count <= 1_000_000) {
+//        val latch = CountDownLatch(7)
+//
+//        val table = Array<Array<String>>(7) {
+//            Array<String>(5) { "" }
+//        }
+//
+//        val arrays = arrayOf(
+//            SingleArray<String>(),
+//            VectorArray<String>(10),
+//            FactorArray<String>(),
+//            MatrixArray<String>(100),
+//            LinkedArray<String>(),
+//            SpacedArray<String>(),
+//            NativeArray<String>()
+//        )
+//
+//        for (i in 0 until arrays.size) {
+//            thread {
+//                val array = arrays[i]
+//                println("calculate $count for ${array::class.java.simpleName}")
+//                val row = table[i]
+//                val time = measureTimeMillis {
+//                    row[0] = array::class.java.simpleName
+//                    row[1] = testAdd(array, count).toString()
+//                    row[2] = testGet(array, count).toString()
+//                    row[3] = testSet(array, count).toString()
+//                    row[4] = testRemove(array, count).toString()
+//                }
+//
+//                println("finished calculation $count for ${array::class.java.simpleName} in $time ms")
+//                latch.countDown()
+//            }
+//        }
+//
+//        latch.await()
+//        printResult(count.toString(), table, output)
+//        count *= 10
+//    }
 
-        var count = 1000
-    while (count <= 1_000_000) {
-        val latch = CountDownLatch(7)
+    var arr = SingleArray<String>()
+    testAdd(arr, 100000)
 
-        val table = Array<Array<String>>(7) {
-            Array<String>(5) { "" }
-        }
-
-        val arrays = arrayOf(
-            SingleArray<String>(),
-            VectorArray<String>(10),
-            FactorArray<String>(),
-            MatrixArray<String>(100),
-            LinkedArray<String>(),
-            SpacedArray<String>(),
-            NativeArray<String>()
-        )
-
-        for (i in 0 until arrays.size) {
-            thread {
-                val array = arrays[i]
-                println("calculate $count for ${array::class.java.simpleName}")
-                val row = table[i]
-                val time = measureTimeMillis {
-                    row[0] = array::class.java.simpleName
-                    row[1] = testAdd(array, count).toString()
-                    row[2] = testGet(array, count).toString()
-                    row[3] = testSet(array, count).toString()
-                    row[4] = testRemove(array, count).toString()
-                }
-
-                println("finished calculation $count for ${array::class.java.simpleName} in $time ms")
-                latch.countDown()
+    println( "regular = " +
+            measureTimeMillis {
+                testSet(arr, 100000)
             }
-        }
+    )
 
-        latch.await()
-        printResult(count.toString(), table, output)
-        count *= 10
-    }
+    arr = SingleArray<String>()
+    testAdd(arr, 100000)
+
+    println( "single = " +
+            measureTimeMillis {
+                for (i in 1..100000) {
+                    arr.singleCopyAdd("$i", Random.nextInt(100000))
+                }
+            }
+    )
 }
 
 private fun printResult(count: String, table: Array<Array<String>>, output: PrintStream) {
