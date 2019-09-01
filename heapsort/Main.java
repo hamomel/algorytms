@@ -2,23 +2,24 @@ import java.util.Random;
 
 class Main {
     public static void main(String[] args) {
-    //    Heap heap = new Heap();
-       int[] arr = new int[1000000];
+       PriorityQueue<String> heap = new PriorityQueue<String>();
+    //    int[] arr = new int[1000000];
        Random random = new Random();
 
-       for(int i = 0; i < 1000000; i++) {
-           arr[i] = random.nextInt(1000000);
+       for(int i = 0; i < 100; i++) {
+           int next = random.nextInt(100);
+           heap.offer(next + "", next); ;
        }
 
-       long start = System.currentTimeMillis();
-       heapSort(arr);
+    //    long start = System.currentTimeMillis();
+    //    heapSort(arr);
 
-       long time = System.currentTimeMillis() - start;
+    //    long time = System.currentTimeMillis() - start;
 
-       System.out.println(String.valueOf(time));
-    //    for(int i = 0; i < arr.length; i++) {
-    //        System.out.print(String.valueOf(arr[i]) + " ");
-    //    }
+    //    System.out.println(String.valueOf(time));
+       for(int i = 0; i < heap.size(); i++) {
+           System.out.print(String.valueOf(heap.poll() + " "));
+       }
     }
 
     static void heapSort(int[] arr) {

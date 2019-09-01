@@ -1,53 +1,40 @@
 import java.util.Arrays;
 
-public class Heap {
-    private int[] arr;
+public class PriorityQueue<T> {
+
+    private class Node {
+        private int priority;
+        private T value;
+
+        Node( T value, int priority) {
+            this.priority = priority;
+            this.value = value;
+        }
+    }
+
+    private Object[] arr = new Object[10];
     private int size;
 
-    Heap() {
-        arr = new int[10];
-    }
-
-    Heap(int[] array) {
-        fromArray(array);
-    }
-
-    void add(int element) {
-        if (size == arr.length)  resize();
-        arr[size] = element;
+    void offer(T element, int priority) {
+        if (size == arr.length)
+            resize();
+        arr[size] = new Node(element, priority);
         size++;
         bubble(size - 1);
     }
 
-    int get() {
-        if (size == 0)  throw new IllegalStateException("Heap is empty");
-        int result = arr[0];
+    T poll() {
+        if (size == 0)
+            throw new IllegalStateException("Heap is empty");
+        Node result = (Node) arr[0];
         arr[0] = arr[size - 1];
         size--;
         drain(0);
-        return result;
+        return result.value;
     }
 
     int size() {
         return size;
-    }
-
-    private void fromArray(int[] array) {
-        arr = array;
-        size = array.length;
-        for(int i = parent(size - 1); i >= 0; i--) {
-            drain(i);
-        }    
-    }
-
-    int[] sorted() {
-        int[] res = new int[size];
-        int sortedPos = size - 1;
-        while(sortedPos > 0) {
-            res[sortedPos] = get();
-            sortedPos--;
-        }
-        return res;
     }
 
     private void resize() {
@@ -71,7 +58,7 @@ public class Heap {
 
         while (current > 0) {
             int parent = parent(current);
-            if (arr[parent] < arr[current]) {
+            if (((Node) arr[parent]).priority < ((Node) arr[current]).priority) {
                 swap(parent, current);
                 current = parent;
             } else {
@@ -85,8 +72,11 @@ public class Heap {
         int right = right(current);
         int left = left(current);
 
-        while (arr[current] < arr[left] || right < size && arr[current] < arr[right]) {
-            if (right >= size || arr[left] > arr[right]) {
+        while (
+            ((Node) arr[current]).priority < ((Node) arr[left]).priority || 
+            right < size && ((Node) arr[current]).priority < ((Node) arr[right]).priority) {
+            
+                if (right >= size || ((Node) arr[left]).priority > ((Node) arr[right]).priority) {
                 swap(current, left);
                 current = left;
             } else {
@@ -95,12 +85,13 @@ public class Heap {
             }
             right = right(current);
             left = left(current);
-            if (left >= size) break;
+            if (left >= size)
+                break;
         }
     }
 
     private void swap(int first, int second) {
-        int temp = arr[first];
+        Object temp = arr[first];
         arr[first] = arr[second];
         arr[second] = temp;
     }
@@ -108,10 +99,10 @@ public class Heap {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        for(int i = 0; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             builder.append(String.valueOf(arr[i]) + " ");
         }
-        
+
         return builder.toString();
     }
 
