@@ -6,7 +6,7 @@ public class PriorityQueue<T> {
         private int priority;
         private T value;
 
-        Node( T value, int priority) {
+        Node(T value, int priority) {
             this.priority = priority;
             this.value = value;
         }
@@ -35,6 +35,24 @@ public class PriorityQueue<T> {
 
     int size() {
         return size;
+    }
+
+    boolean remove(T element) {
+        int position = -1;
+        for (int i = 0; i < size; i++) {
+            if (((Node) arr[i]).value.equals(element)) {
+                position = i;
+                break;
+            }
+        }
+
+        if (position < 0)
+            return false;
+
+        swap(size - 1, position);
+        size--;
+        drain(position);
+        return true;
     }
 
     private void resize() {
@@ -72,11 +90,10 @@ public class PriorityQueue<T> {
         int right = right(current);
         int left = left(current);
 
-        while (
-            ((Node) arr[current]).priority < ((Node) arr[left]).priority || 
-            right < size && ((Node) arr[current]).priority < ((Node) arr[right]).priority) {
-            
-                if (right >= size || ((Node) arr[left]).priority > ((Node) arr[right]).priority) {
+        while (left < size && ((Node) arr[current]).priority < ((Node) arr[left]).priority
+                || right < size && ((Node) arr[current]).priority < ((Node) arr[right]).priority) {
+
+            if (right >= size || ((Node) arr[left]).priority > ((Node) arr[right]).priority) {
                 swap(current, left);
                 current = left;
             } else {
@@ -85,8 +102,6 @@ public class PriorityQueue<T> {
             }
             right = right(current);
             left = left(current);
-            if (left >= size)
-                break;
         }
     }
 
