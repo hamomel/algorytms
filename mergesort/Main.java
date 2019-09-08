@@ -3,7 +3,7 @@ import java.util.Random;
 
 public class Main {
 
-    private static int threadCount = 0;
+    private static int threadCount = Runtime.getRuntime().availableProcessors();
 
     public static void main(String[] args) {
         int[] arr = new int[10000000];
@@ -38,7 +38,7 @@ public class Main {
 
         int middle = begin + (end - begin) / 2;
 
-        if (threadCount < 4) {
+        if (threadCount > 0) {
 
             Thread first = new Thread(() -> {
                 splitMerge(copy, begin, middle, arr);
@@ -50,7 +50,7 @@ public class Main {
             first.start();
             second.start();
 
-            threadCount += 2;
+            threadCount -= 2;
 
             try {
                 first.join();
