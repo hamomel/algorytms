@@ -22,36 +22,32 @@ public class XYtree {
 
         if (l.priority > r.priority) {
             XYtree newRight = merge(l.right, r);
-            return new XYtree(l.value, l.priority, left, newRight);
+            return new XYtree(l.value, l.priority, l.left, newRight);
         } else {
             XYtree newLeft = merge(l, r.left);
             return new XYtree(r.value, r.priority, newLeft, r.right);
         }
     }
 
-    private XYtree[] split(int x, XYtree l, XYtree r) {
-        XYtree[] newTrees = new XYtree[] {null, null};
+    private XYtree[] split(int x) {
+        XYtree[] newTrees = new XYtree[] { null, null };
         if (x > value) {
-            if (right == null) {
-                r = null;
-            } else {
-                newTrees = right.split(x, null, r);
+            if (right != null) {
+                newTrees = right.split(x);
             }
-            return new XYtree[] {new XYtree(value, priority, left, newTrees[1]), r};
+            return new XYtree[] { new XYtree(value, priority, left, newTrees[0]), newTrees[1] };
         } else {
-            if (left == null) {
-                l = null;
-            } else {
-                newTrees =  left.split(x, l, null);
+            if (left != null) {
+                newTrees = left.split(x);
             }
-            return new XYtree[] {l, new XYtree(value, priority, newTrees[0], right)};
+            return new XYtree[] { newTrees[0], new XYtree(value, priority, newTrees[1], right) };
         }
     }
 
     void add(int x) {
-        XYtree[] parts = split(x, null, null);
+        XYtree[] parts = split(x);
         Random random = new Random();
-        XYtree m = new XYtree(x, random.nextInt(), null, null);
+        XYtree m = new XYtree(x, random.nextInt(10000), null, null);
         XYtree newTree = merge(merge(parts[0], m), parts[1]);
         value = newTree.value;
         priority = newTree.priority;
@@ -61,7 +57,7 @@ public class XYtree {
 
     @Override
     public String toString() {
-        return String.valueOf(value) + ", "  + String.valueOf(priority);
+        return "(" + String.valueOf(value) + ", " + String.valueOf(priority) + ")";
     }
 
     public String getTreeString() {
@@ -70,7 +66,7 @@ public class XYtree {
 
     private String toString(String indent, StringBuilder builder) {
         builder.append(indent);
-        builder.append("+- ");
+        builder.append("+-");
         builder.append(this);
         builder.append("\n");
         indent += "   ";
