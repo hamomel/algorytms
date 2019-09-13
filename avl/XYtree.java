@@ -55,6 +55,16 @@ public class XYtree {
         right = newTree.right;
     }
 
+    void remove(int value) {
+        XYtree newLeft = split(value)[0];
+        XYtree newRight = split(value + 1)[1];
+        XYtree newTree = merge(newLeft, newRight);
+        this.value = newTree.value;
+        priority = newTree.priority;
+        left = newTree.left;
+        right = newTree.right;
+    }
+
     @Override
     public String toString() {
         return "(" + String.valueOf(value) + ", " + String.valueOf(priority) + ")";
