@@ -15,7 +15,7 @@
 # .idea/modules
 # *.iml
 # *.ipr
-
+.idea/workspace.xml
 # File-based project format
 *.iws
 
