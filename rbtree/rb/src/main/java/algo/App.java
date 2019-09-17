@@ -1,17 +1,18 @@
 package algo;
 
+import java.io.FileNotFoundException;
 import java.util.Random;
 import java.util.Scanner;
 
 public class App {
-    public static void main(String[] args) {
-        RBTree tree = RBTree.create(42);
+    public static void main(String[] args) throws FileNotFoundException {
+        RBTree tree = new RBTree(42);
         Random random = new Random();
-        for (int i = 22; i < 43; i++) {
-            tree.insert(random.nextInt(100));
+        for (int i = 0; i < 100000; i++) {
+            tree.insert(random.nextInt());
         }
 
-        System.out.println(tree.getTreeString());
+        System.out.println(tree);
 
         Scanner scanner = new Scanner(System.in);
 

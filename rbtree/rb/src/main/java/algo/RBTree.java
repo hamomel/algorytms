@@ -1,192 +1,206 @@
 package algo;
 
 public class RBTree {
-    public static final String ANSI_BLUE = "\u001B[34m";
-    public static final String ANSI_RED = "\u001B[31m";
-    public static final String ANSI_RESET = "\u001B[0m";
 
-    int value;
-    boolean isBlack;
-    RBTree parent;
-    RBTree left;
-    RBTree right;
+    private static class Node {
+        public static final String ANSI_BLUE = "\u001B[34m";
+        public static final String ANSI_RED = "\u001B[31m";
+        public static final String ANSI_RESET = "\u001B[0m";
 
-    public static RBTree create(int value) {
-        return new RBTree(value, true);
-    }
+        int value;
+        boolean isBlack = false;
+        Node parent;
+        Node left;
+        Node right;
 
-    private RBTree(int value, boolean isBlack) {
-        this.value = value;
-        this.isBlack = isBlack;
-    }
-
-    public void insert(int item) {
-        if (parent != null) {
-            throw new IllegalArgumentException("insertion must be done only on root");
+        public Node(int value) {
+            this.value = value;
         }
-        RBTree newNode = new RBTree(item, false);
-        insert(newNode);
+
+        private Node getUncle() {
+            if (parent.parent.left == parent) {
+                return parent.parent.right;
+            } else {
+                return parent.parent.left;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(value) + ", " + (isBlack ? "black" : "red");
+        }
+
+        private String colored() {
+            String textColor = isBlack ? ANSI_BLUE : ANSI_RED;
+            return textColor + toString() + ANSI_RESET;
+        }
     }
 
-    public boolean find(int item) {
-        if (item == value) {
+    private Node root;
+
+    public RBTree(int value) {
+        Node newNode = new Node(value);
+        newNode.isBlack = true;
+        root = newNode;
+    }
+
+    public void insert(int value) {
+        Node newNode = new Node(value);
+        Node current = root;
+
+        while (true) {
+            if (newNode.value == current.value) return;
+
+            if (newNode.value < current.value) {
+                if (current.left == null) {
+                    current.left = newNode;
+                    newNode.parent = current;
+                    break;
+                } else {
+                    current = current.left;
+                }
+            } else {
+                if (current.right == null) {
+                    current.right = newNode;
+                    newNode.parent = current;
+                    break;
+                } else {
+                    current = current.right;
+                }
+            }
+        }
+
+        checkStructure(newNode);
+    }
+
+    public boolean find(int value) {
+        return find(value, root);
+    }
+
+    private boolean find(int value, Node node) {
+        if (value == node.value) {
             return true;
-        } 
-        
-        if (item < value) {
-            if (left != null) {
-                return left.find(item);
+        }
+
+        if (value < node.value) {
+            if (node.left != null) {
+                return find(value, node.left);
             }
         } else {
-            if (right != null) {
-                return right.find(item);
+            if (node.right != null) {
+                return find(value, node.right);
             }
         }
 
         return false;
     }
 
-    private void insert(RBTree node) {
-        if (node.value < value) {
-            if (left == null) {
-                left = node;
-                node.parent = this;
-            } else {
-                left.insert(node);
-            }
-        } else {
-            if (right == null) {
-                right = node;
-                node.parent = this;
-            } else {
-                right.insert(node);
-            }
-        }
-
-        node.checkStructure();
-    }
-
-    private void checkStructure() {
-        if (parent == null) {
-            isBlack = true;
+    private void checkStructure(Node node) {
+        if (node.parent == null) {
+            node.isBlack = true;
             return;
         }
 
-        if (parent.isBlack)
+        if (node.parent.isBlack)
             return;
 
-        RBTree uncle = getUncle();
+        Node uncle = node.getUncle();
 
         if (uncle == null || uncle.isBlack) {
-            if (parent.right == this) {
-                if (parent.parent.left == parent) {
-                    rotateLeft();
-                    left.checkStructure();
+            if (node.parent.right == node) {
+                if (node.parent.parent.left == node.parent) {
+                    rotateLeft(node);
+                    checkStructure(node.left);
                 } else {
-                    parent.rotateLeft();
-                    parent.left.reColor();
-                    parent.reColor();
-                    parent.checkStructure();
+                    rotateLeft(node.parent);
+                    node.parent.left.isBlack = false;
+                    node.parent.isBlack = true;
                 }
             } else {
-                if (parent.parent.right == parent) {
-                    rotateRight();
-                    right.checkStructure();
+                if (node.parent.parent.right == node.parent) {
+                    rotateRight(node);
+                    checkStructure(node.right);
                 } else {
-                    parent.rotateRight();
-                    parent.right.reColor();
-                    parent.reColor();
-                    parent.checkStructure();
+                    rotateRight(node.parent);
+                    node.parent.right.isBlack = false;
+                    node.parent.isBlack = true;
                 }
             }
         } else {
-            parent.reColor();
-            uncle.reColor();
-            parent.parent.reColor();
-            parent.parent.checkStructure();
+            node.parent.isBlack = true;
+            uncle.isBlack = true;
+            node.parent.parent.isBlack = false;
+            checkStructure(node.parent.parent);
         }
     }
 
-    private void rotateRight() {
-        RBTree granny = parent.parent;
+    private void rotateRight(Node node) {
+        Node parent = node.parent;
+        Node granny = parent.parent;
         if (granny != null) {
             if (granny.left == parent) {
-                granny.left = this;
+                granny.left = node;
             } else {
-                granny.right = this;
-            }    
+                granny.right = node;
+            }
+        } else {
+            root = node;
         }
-        
-        parent.left = this.right;
-        parent.parent = this;        
-        right = parent;
-        parent = granny;
+
+        parent.left = node.right;
+        if (node.right != null) {
+            node.right.parent = parent;
+        }
+        parent.parent = node;
+        node.right = parent;
+        node.parent = granny;
     }
 
-    private void rotateLeft() {
-        RBTree granny = parent.parent;
+    private void rotateLeft(Node node) {
+        Node parent = node.parent;
+        Node granny = parent.parent;
         if (granny != null) {
             if (granny.left == parent) {
-                granny.left = this;
+                granny.left = node;
             } else {
-                granny.right = this;
-            }    
-        }
-        
-        parent.right = this.left;
-        parent.parent = this;
-        left = parent;
-        parent = granny;
-    }
-
-    private void reColor() {
-        if (parent == null) {
-            isBlack = true;
+                granny.right = node;
+            }
         } else {
-            isBlack = !isBlack;
+            root = node;
         }
-    }
 
-    private RBTree getUncle() {
-        if (parent.parent.left == parent) {
-            return parent.parent.right;
-        } else {
-            return parent.parent.left;
+        parent.right = node.left;
+        if (node.left != null) {
+            node.left.parent = parent;
         }
+        parent.parent = node;
+        node.left = parent;
+        node.parent = granny;
     }
 
     @Override
     public String toString() {
-        return (isBlack ? "black" : "red") + ", " + String.valueOf(value);
+        return toString(root, "", new StringBuilder());
     }
 
-    public String getTreeString() {
-        return toString("", new StringBuilder());
-    }
-
-    private String toString(String indent, StringBuilder builder) {
+    private String toString(Node node, String indent, StringBuilder builder) {
         builder.append(indent);
         builder.append("+-");
-        builder.append(colored());
+        builder.append(node.colored());
         builder.append("\n");
         indent += "   ";
-        if (right != null) {
-            right.toString(indent + "| ", builder);
+        if (node.right != null) {
+            toString(node.right, indent + "| ", builder);
         } else {
             builder.append(indent + "+- null");
             builder.append("\n");
         }
-        if (left != null) {
-            left.toString(indent, builder);
+        if (node.left != null) {
+            toString(node.left, indent, builder);
         } else {
             builder.append(indent + "+- null");
             builder.append("\n");
         }
         return builder.toString();
-    }
-
-    private String colored() {
-        String textColor = isBlack ? ANSI_BLUE : ANSI_RED;
-        return textColor + toString() + ANSI_RESET;
     }
 }
