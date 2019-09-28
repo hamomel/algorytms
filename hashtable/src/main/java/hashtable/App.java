@@ -26,7 +26,6 @@ public final class App {
             System.out.println(table.find(input));
             System.out.println(table.remove(input));
             System.out.println(table);
-            System.out.println(table.realSize());
 
         }
         scanner.close();

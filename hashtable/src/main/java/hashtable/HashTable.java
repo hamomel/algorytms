@@ -1,7 +1,5 @@
 package hashtable;
 
-import java.security.KeyStore.Entry;
-
 public class HashTable<K, V> {
 
     private class Entry {
@@ -32,7 +30,7 @@ public class HashTable<K, V> {
             resize();
         }
 
-        put(new Entry(key, value));        
+        put(new Entry(key, value));
         size++;
     }
 
@@ -86,13 +84,13 @@ public class HashTable<K, V> {
     @SuppressWarnings("unchecked")
     private void resize() {
         int newCapacity = (int) (arr.length * resizeFactor);
-        
+
         Object[] oldArray = arr;
         this.arr = new Object[newCapacity];
 
         for(int i = 0; i < oldArray.length; i++) {
             Entry entry = (Entry) oldArray[i];
-            
+
             while (entry != null) {
                 Entry next = entry.next;
                 put(entry);
@@ -105,19 +103,6 @@ public class HashTable<K, V> {
         int index = getIndex(entry.key);
         entry.next = (Entry) arr[index];
         arr[index] = entry;
-    }
-
-    public int realSize() {
-        int res = 0;
-        for(Object entry : arr) {
-            Entry e = (Entry) entry;
-            
-            while (e != null) {
-                res++;
-                e = e.next;
-            }
-        }
-        return res;
     }
 
     @Override
