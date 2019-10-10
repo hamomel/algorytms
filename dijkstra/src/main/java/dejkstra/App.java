@@ -148,7 +148,7 @@ public class App {
 
     private static void printPath(long[] path, int fromVertex, File dir) {
         MutableGraph g = mutGraph("path").setDirected(true);
-        g.add(mutNode("paths from " + fromVertex));
+        g.add(mutNode("paths from " + fromVertex).add(Color.RED));
 
         for (int i = 0; i < path.length; i++) {
             if (i == fromVertex) continue;
@@ -157,16 +157,17 @@ public class App {
                     (getDistance(path[i]) == Integer.MIN_VALUE
                             ? "\u221E"
                             : getDistance(path[i])) +
-                            " to " + i
+                            " dist to " + i
             );
             g.add(node);
 
             while (current != fromVertex) {
+                int previous = current;
                 current = getVertex(path[current]);
                 if (getDistance(path[i]) == Integer.MIN_VALUE) break;
-                MutableNode newNode = mutNode(current + " to " + i);
+                MutableNode newNode = mutNode("next " + current + " to " + i);
                 Link link = to(newNode)
-                        .with(Label.of(getDistance(path[i]) + ""))
+                        .with(Label.of(getDistance(path[previous]) + ""))
                         .with(Arrow.NONE);
                 node.addLink(link);
                 node = newNode;
