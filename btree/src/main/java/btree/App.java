@@ -14,11 +14,23 @@ public final class App {
 
         Scanner scanner = new Scanner(System.in);
         while (true) {
+            System.out.println("enter value to find");
             String input = scanner.nextLine();
 
             try {
                 int value = Integer.parseInt(input);
-                System.out.println(tree.find(value));
+                System.out.println("find " + tree.find(value));
+            } catch (NumberFormatException e) {
+                break;
+            }
+
+            System.out.println("enter value to find");
+            input = scanner.nextLine();
+
+            try {
+                int value = Integer.parseInt(input);
+                System.out.println("delete " + tree.delete(value));
+                System.out.println("find " + tree.find(value));
             } catch (NumberFormatException e) {
                 break;
             }
