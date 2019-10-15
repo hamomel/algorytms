@@ -1,22 +1,17 @@
 package btree;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 public class BTreeTest {
-    private BTree tree;
 
-    @Before
-    public void setUp() throws Exception {
-        tree = new BTree(3);
-    }
+    private int depth = 0;
 
     @Test
     public void testFind() {
         int count = 500;
-        feelTree(tree, count);
+        BTree tree = initTree(count, 3);
 
         for (int i = 0; i < count; i++) {
             assertTrue(tree.find(i));
@@ -29,7 +24,7 @@ public class BTreeTest {
 
     @Test
     public void testRemove() {
-        feelTree(tree, 30);
+        BTree tree = initTree(30, 3);
 
         for (int i = 0; i < 30; i++) {
             assertTrue(tree.delete(i));
@@ -37,9 +32,34 @@ public class BTreeTest {
         }
     }
 
-    private void feelTree(BTree tree, int count) {
+    @Test
+    public void testDepth() {
+        BTree tree = initTree(900, 3);
+
+        measureDepth(tree.getRoot(), depth);
+        System.out.println(depth);
+    }
+
+    private void measureDepth(BTree.Node node, int nodeDepth) {
+        if (node.children == null) {
+            if (depth > 0) {
+                assertEquals(depth, nodeDepth);
+            } else {
+                depth = nodeDepth;
+            }
+            return;
+        }
+
+        for (int i = 0; i < node.size + 1; i++) {
+            measureDepth(node.children[i], nodeDepth + 1);
+        }
+    }
+
+    private BTree initTree(int count, int maxDegree) {
+        BTree tree = new BTree(maxDegree);
         for (int i = 0; i < count; i++) {
             tree.add(i);
         }
+        return tree;
     }
 }

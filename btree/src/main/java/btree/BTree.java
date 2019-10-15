@@ -16,7 +16,7 @@ public class BTree {
         root = new Node();
     }
 
-    private class Node {
+    class Node {
         int size = 0;
         Node parent;
         int[] keys = new int[minDegree * 2];
@@ -110,6 +110,9 @@ public class BTree {
         }
     }
 
+    Node getRoot() {
+        return root;
+    }
     public void add(int key) {
         findLeafAndInsert(key, root);
     }
