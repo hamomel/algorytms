@@ -48,8 +48,8 @@ public class BTree {
             if (size == 0) {
                 keys[0] = key;
             } else {
-                for (int i = size; i > 0; i--) {
-                    if (keys[i - 1] <= key) {
+                for (int i = size; i >= 0; i--) {
+                    if (i == 0 || keys[i - 1] <= key) {
                         keys[i] = key;
                         index = i + 1;
                         break;
@@ -130,6 +130,7 @@ public class BTree {
             i++;
             if (i == node.size) {
                 findLeafAndInsert(key, node.children[i]);
+                break;
             }
         }
     }
@@ -138,7 +139,7 @@ public class BTree {
         node.add(key, child);
         if (node.isOverflown()) {
             int[] newKeys = new int[minDegree * 2];
-            int goToParent = node.keys[minDegree];
+            int goToParent = node.keys[minDegree - 1];
 
             System.arraycopy(node.keys, minDegree, newKeys, 0, minDegree);
 
@@ -146,11 +147,11 @@ public class BTree {
 
             if (!node.isLeaf()) {
                 newChildren = new Node[minDegree * 2 + 1];
-                System.arraycopy(node.children, minDegree + 1, newChildren, 0, minDegree + 1);
+                System.arraycopy(node.children, minDegree, newChildren, 0, minDegree + 1);
             }
 
             Node newChild = new Node(minDegree, node.parent, newKeys, newChildren);
-            node.size = minDegree;
+            node.size = minDegree - 1;
 
             if (newChildren != null) {
                 for (Node c : newChildren) {
@@ -224,7 +225,7 @@ public class BTree {
     }
 
     private void balanceSize(@NotNull Node node) {
-        if (node == root || node.size >= minDegree) return;
+        if (node == root || node.size >= minDegree - 1) return;
 
         Node parent = node.parent;
 
@@ -273,7 +274,7 @@ public class BTree {
 
             node.size = node.size + neighbor.size + 1;
 
-            if (indexInParent < parent.size) {
+            if (indexInParent < parent.size - 1) {
                 System.arraycopy(
                         parent.keys,
                         indexInParent + 1,
@@ -282,10 +283,10 @@ public class BTree {
                         parent.size - indexInParent - 1);
                 System.arraycopy(
                         parent.children,
-                        indexInParent + 1,
+                        indexInParent + 2,
                         parent.children,
-                        indexInParent,
-                        parent.size - indexInParent);
+                        indexInParent + 1,
+                        parent.size - indexInParent - 1);
             }
 
             if (parent.size == 1) {
