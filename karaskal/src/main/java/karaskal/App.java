@@ -27,7 +27,7 @@ public class App {
         printGraph(array, tree);
     }
 
-    private static List<Edge> findMinimalTree(int[][] graph) {
+    public static List<Edge> findMinimalTree(int[][] graph) {
         List<Edge> edges = getSortedEdges(graph);
         List<Edge> tree = new ArrayList<>();
         List<Set<Integer>> subtrees = new ArrayList<>();
