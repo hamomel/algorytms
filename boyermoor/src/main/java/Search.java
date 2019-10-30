@@ -22,12 +22,12 @@ public class Search {
                 matches.add(shift);
                 shift++;
             } else {
-                    Integer index = processed.get(text.charAt(shift + j));
-                    int addition = (pattern.length() - j - 1);
-                    if (index == null || index < addition) {
+                    Integer processedShift = processed.get(text.charAt(shift + j));
+                    int patternShift = (pattern.length() - j - 1);
+                    if (processedShift == null || processedShift < patternShift) {
                         shift += pattern.length() - (pattern.length() - j) + 1;
                     } else {
-                        shift += index - addition;
+                        shift += processedShift - patternShift;
                     }
                 }
             }
