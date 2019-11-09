@@ -1,0 +1,6 @@
+Usage: java -jar rle [COMMAND] [input file] {-o} {output file}
+  Commands:
+    -compress - compresses input file
+    -decompress - decompresses input file
+
+  Output file is optional, if not set, default name will be (input file name without extension) + (.cmp or .dcmp)
