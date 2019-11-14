@@ -12,13 +12,23 @@ public class Cache<K, V> {
     }
 
     public V get(K key) {
-        Item current = head;
-        while (current.next != null) {
+        if (head.key == key) {
+            head.lastAccess = System.currentTimeMillis();
+            return head.value;
+        }
+
+        Item previous = head;
+        Item current = head.next;
+        while (current != null) {
             if (current.key.equals(key)) {
+                previous.next = current.next;
+                current.next = head;
+                head = current;
                 current.lastAccess = System.currentTimeMillis();
                 return current.value;
             }
 
+            previous = current;
             current = current.next;
         }
 
@@ -44,6 +54,7 @@ public class Cache<K, V> {
             head.next = null;
             head = next;
             isFreed = true;
+            size--;
         }
         Item previous = head;
         Item current = head.next;
@@ -54,6 +65,7 @@ public class Cache<K, V> {
                 previous.next = next;
                 current = next;
                 isFreed = true;
+                size--;
             } else {
                 previous = current;
                 current = current.next;
@@ -71,6 +83,7 @@ public class Cache<K, V> {
         }
 
         previous.next = null;
+        size--;
     }
 
     private class Item {
