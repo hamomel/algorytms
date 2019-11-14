@@ -5,10 +5,10 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class AppTest {
+public class CacheTest {
 
     @Test
-    public void testSetGet() throws InterruptedException {
+    public void testSetGet() {
         Cache<Integer, Integer> cache = new Cache<>(10, 1000);
 
         for (int i = 0; i < 100; i++) {
