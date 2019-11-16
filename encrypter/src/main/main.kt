@@ -27,7 +27,6 @@ private fun xorFiles(inFile: File, outFile: File, key: String) {
         val keyBytes = key.toByteArray()
 
         while (true) {
-            println(input.available())
             val read = input.read(buffer)
             if (read <= 0) break
             val enc = xorArray(buffer, keyBytes, read)
