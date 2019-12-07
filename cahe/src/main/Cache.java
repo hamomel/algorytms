@@ -13,6 +13,8 @@ public class Cache<K, V> {
     }
 
     public V get(K key) {
+        dropOutdated();
+
         Item current = head;
         while (current != null) {
             // if desired item is found, move it to the start of the list and update it's access time,
@@ -42,7 +44,9 @@ public class Cache<K, V> {
     }
 
     public void set(K key, V value) {
-        if (size == maxSize && !dropOutdated()) {
+        dropOutdated();
+
+        if (size == maxSize) {
             dropTail();
         }
 
@@ -56,24 +60,23 @@ public class Cache<K, V> {
         newItem.next = head;
         head = newItem;
         size++;
-        // drop outdated items to keep cache clean. Might be it is not needed (depends on purpose of cache)
-        dropOutdated();
     }
 
-    private boolean dropOutdated() {
-        boolean isFreed = false;
-
+    private void dropOutdated() {
         // the items are sorted by lastAccess by design, so we can check them in a sequence from the tail
         while (tail != null && System.currentTimeMillis() - tail.lastAccess > timeout) {
             dropTail();
-            isFreed = true;
         }
-        return isFreed;
     }
 
     private void dropTail() {
-        tail.previous.next = null;
-        tail = tail.previous;
+        if (tail.previous != null) {
+            tail.previous.next = null;
+            tail = tail.previous;
+        } else {
+            head = null;
+            tail = null;
+        }
         size--;
     }
 
