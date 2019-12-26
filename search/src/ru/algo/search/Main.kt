@@ -10,7 +10,7 @@ fun main(args: Array<String>) {
 
     while (true) {
         val input = promptUser()
-        if (input.toLowerCase() == "exit") break
+        if (input.toLowerCase() == "exit" || input.toLowerCase() == "выход") break
         val found = searcher.search(input)
         printResult(found)
     }
