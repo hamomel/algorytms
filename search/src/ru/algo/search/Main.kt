@@ -1,11 +1,18 @@
 package ru.algo.search
 
+import java.lang.IllegalArgumentException
+
 fun main(args: Array<String>) {
     val directory = args[0]
     val indexer = Indexer(directory)
-    indexer.startIndex()
-    val files = indexer.getFiles()
-    val index = indexer.getIndex()
+    try {
+        indexer.checkIndex()
+    } catch (e: IllegalArgumentException) {
+        println("Папка $directory не найдена")
+        return
+    }
+    val files = indexer.files
+    val index = indexer.index
     val searcher = Searcher(files, index)
 
     while (true) {
