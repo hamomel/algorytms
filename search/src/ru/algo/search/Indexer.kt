@@ -6,15 +6,18 @@ import java.util.*
 import kotlin.concurrent.thread
 import kotlin.math.pow
 
-private const val FILES_NAME = "files.csv"
-private const val INDEX_NAME = "index.csv"
-private const val MIN_WORD_LENGTH = 4
+private const val FILES_NAME = "files.tsv"
+private const val INDEX_NAME = "index.tsv"
+private const val DELIMITER = "\t"
 private val SUPPORTED_FORMATS = arrayOf("txt")
 
 class Indexer(private val directory: String) {
     val index = arrayOfNulls<Array<Array<Int>>>(2.0.pow(16).toInt())
     var files = emptyArray<File>()
         private set
+
+    private var wordsCount = 0
+    private var collisionCount = 0
 
     fun checkIndex() {
         val dir = File(directory)
@@ -47,7 +50,7 @@ class Indexer(private val directory: String) {
     private fun getSavedFilesIfNotChanged(dir: File, filesList: File): Array<File>? {
         return filesList.readLines()
             .map {
-                val parts = it.split(",")
+                val parts = it.split(DELIMITER)
                 val file = File(dir, parts[0])
                 val lastModified = parts[1].toLong()
                 if (file.lastModified() != lastModified) return null
@@ -82,17 +85,24 @@ class Indexer(private val directory: String) {
                                     index[hash]?.set(arrayForHash.size, arrayOf(filePosition, position))
                                 }
                             } else {
+                                wordsCount++
                                 index[hash] = arrayOf(arrayOf(filePosition, position))
                             }
                         }
 
                         position += word.length + 1
                     }
-                    println("indexed position: $position in $fileName")
+//                    println("indexed position: $position in $fileName")
                 }
             }
         }
 
+        println("""
+            Проиндексировано ${files.size} файлов,
+            найдено $wordsCount слов,
+            произошло $collisionCount коллизий
+            """.trimIndent())
+        println()
         saveIndex()
     }
 
@@ -106,7 +116,7 @@ class Indexer(private val directory: String) {
                 break
             } else {
                 newArray[i] = newArray[i - 1]
-                if (!collisionReported) println("collision occurred")
+                if (!collisionReported) collisionCount++
                 collisionReported = true
             }
             i--
@@ -125,7 +135,7 @@ class Indexer(private val directory: String) {
             println("saving files")
             filesFile.bufferedWriter().use { writer ->
                 files.forEach {
-                    writer.write("${it.toRelativeString(dir)},${it.lastModified()}")
+                    writer.write("${it.toRelativeString(dir)}$DELIMITER${it.lastModified()}")
                     writer.newLine()
                 }
             }
@@ -137,8 +147,8 @@ class Indexer(private val directory: String) {
                 index.forEachIndexed { index, arrayOfArrays ->
                     arrayOfArrays?.forEach {
                         val fileName = files[it[0]].toRelativeString(dir)
-                        val indices = it.drop(1).joinToString(separator = ",")
-                        writer.write("$index,$fileName,$indices")
+                        val indices = it.drop(1).joinToString(separator = DELIMITER)
+                        writer.write("$index$DELIMITER$fileName$DELIMITER$indices")
                         writer.newLine()
                     }
                 }
@@ -152,7 +162,7 @@ class Indexer(private val directory: String) {
             var prevHash = -1
 
             lines.forEach { line ->
-                val parts = line.split(",")
+                val parts = line.split(DELIMITER)
                 val hash = parts[0].toInt()
                 val fileName = parts[1]
                 val filePosition = files.indexOfFirst { it.toRelativeString(dir) == fileName }
