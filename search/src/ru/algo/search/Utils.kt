@@ -2,7 +2,9 @@ package ru.algo.search
 
 import java.io.File
 
-private val STRING_FILTER = Regex("([^\\p{L}\\p{N}])")
+private val NOT_LETTERS_OR_DIGITS = Regex("([^\\p{Alnum}])")
+private val DIGIT = Regex("\\p{Digit}")
+private val ALL = Regex("\\p{all}")
 
 /*
     calculates 16 bit hash
@@ -36,5 +38,13 @@ fun File.getFilesRecursively(files: MutableList<File>): List<File> {
 }
 
 fun tokenize(text: String): List<String> =
-    text.replace(STRING_FILTER, " ")
+    text.toLowerCase()
+        .replace(NOT_LETTERS_OR_DIGITS, " ")
         .split(" ")
+        .map {
+            if (it.contains(DIGIT)) {
+                it.replace(ALL, " ")
+            } else {
+                it
+            }
+        }

@@ -9,7 +9,7 @@ import kotlin.math.pow
 private const val FILES_NAME = "files.tsv"
 private const val INDEX_NAME = "index.tsv"
 private const val DELIMITER = "\t"
-private val SUPPORTED_FORMATS = arrayOf("txt")
+private val SUPPORTED_FORMATS = arrayOf("txt", "json")
 
 class Indexer(private val directory: String) {
     val index = arrayOfNulls<Array<Array<Int>>>(2.0.pow(16).toInt())
@@ -18,6 +18,8 @@ class Indexer(private val directory: String) {
 
     private var wordsCount = 0
     private var collisionCount = 0
+    private var filesCount = 0
+    private var linesCount = 0
 
     fun checkIndex() {
         val dir = File(directory)
@@ -29,22 +31,22 @@ class Indexer(private val directory: String) {
         val indexFile = File(dir, INDEX_NAME)
 
         if (!filesList.exists() || !indexFile.exists()) {
-            println("files don't exist, start full index")
+            println("Файлов индекса не найдено, начинаем полную индексацию")
             indexAll()
         } else {
             val savedFiles = getSavedFilesIfNotChanged(dir, filesList)
             if (savedFiles != null && files.size == savedFiles.size) {
-                println("files up to date, restoring index from disk")
+                println("Файлы не изменились, восстанавливаем индекс с диска")
                 fillIndex(indexFile, dir)
             } else {
-                println("files are changed, start full index")
+                println("Файлы изменены, начинаем полную индексацию")
                 indexAll()
             }
         }
     }
 
     private fun getSupportedFiles(dir: File) = dir.getFilesRecursively(mutableListOf())
-        .filter { it.extension in SUPPORTED_FORMATS }
+        .filter { it.extension.toLowerCase() in SUPPORTED_FORMATS }
         .toTypedArray()
 
     private fun getSavedFilesIfNotChanged(dir: File, filesList: File): Array<File>? {
@@ -60,20 +62,23 @@ class Indexer(private val directory: String) {
     }
 
     private fun indexAll() {
-        // TODO remove next line after removing logs
-        val dir = File(directory)
+        val hashToWords = mutableMapOf<Int, MutableSet<String>>()
+        val uniqueWords = mutableSetOf<String>()
         files.forEachIndexed { filePosition, file ->
-            // TODO remove next line after removing logs
-            val fileName = file.toRelativeString(dir)
-            println("indexing file $fileName")
-
             var position = 0
             file.useLines { lines: Sequence<String> ->
                 lines.forEach { line ->
                     val parts = tokenize(line)
                     parts.forEach { word ->
-                        if (word.length >= MIN_WORD_LENGTH) {
+                        if (word.isNotBlank() && word.length >= MIN_WORD_LENGTH) {
+                            uniqueWords.add(word)
                             val hash = calculateHash(word.toByteArray())
+                            if (hashToWords[hash] == null) {
+                                hashToWords[hash] = mutableSetOf(word)
+                            } else if (hashToWords[hash]?.contains(word) != true) {
+                                hashToWords[hash]?.add(word)
+                                collisionCount++
+                            }
                             val arrayForHash = index[hash]
 
                             if (arrayForHash != null) {
@@ -85,29 +90,42 @@ class Indexer(private val directory: String) {
                                     index[hash]?.set(arrayForHash.size, arrayOf(filePosition, position))
                                 }
                             } else {
-                                wordsCount++
                                 index[hash] = arrayOf(arrayOf(filePosition, position))
                             }
                         }
 
                         position += word.length + 1
                     }
-//                    println("indexed position: $position in $fileName")
                 }
             }
+            filesCount++
+            print("Проиндексировано $filesCount файлов             \r")
         }
 
         println("""
-            Проиндексировано ${files.size} файлов,
-            найдено $wordsCount слов,
+            Проиндексировано $filesCount файлов,
+            из найденных ${files.size},
+            найдено ${uniqueWords.size} слов,
             произошло $collisionCount коллизий
             """.trimIndent())
         println()
+
+        File(directory, "collisions.tsv").bufferedWriter().use { writer ->
+            hashToWords.forEach {
+                writer.write("${it.key}\t${it.value.joinToString(separator = "\t")}")
+                writer.newLine()
+            }
+        }
+        File(directory, "unique_words.txt").bufferedWriter().use {writer ->
+            uniqueWords.sorted().forEach {
+                writer.write(it)
+                writer.newLine()
+            }
+        }
         saveIndex()
     }
 
     private fun insertSorted(indexArray: Array<Int>, position: Int): Array<Int> {
-        var collisionReported = false
         val newArray = Arrays.copyOf(indexArray, indexArray.size + 1)
         var i = newArray.size - 1
         while (i > 0) {
@@ -116,8 +134,6 @@ class Indexer(private val directory: String) {
                 break
             } else {
                 newArray[i] = newArray[i - 1]
-                if (!collisionReported) collisionCount++
-                collisionReported = true
             }
             i--
         }
@@ -126,13 +142,12 @@ class Indexer(private val directory: String) {
     }
 
     private fun saveIndex() {
-        println("saving")
+        println("Сохраняем индекс на диск")
         val dir = File(directory)
         val filesFile = File(dir, FILES_NAME)
         val indexFile = File(dir, INDEX_NAME)
 
         thread {
-            println("saving files")
             filesFile.bufferedWriter().use { writer ->
                 files.forEach {
                     writer.write("${it.toRelativeString(dir)}$DELIMITER${it.lastModified()}")
@@ -142,7 +157,6 @@ class Indexer(private val directory: String) {
         }
 
         thread {
-            println("saving indices")
             indexFile.bufferedWriter().use { writer ->
                 index.forEachIndexed { index, arrayOfArrays ->
                     arrayOfArrays?.forEach {
@@ -157,6 +171,10 @@ class Indexer(private val directory: String) {
     }
 
     private fun fillIndex(indexFile: File, dir: File) {
+        val filePositions = mutableMapOf<String, Int>()
+        files.forEachIndexed { index, file ->
+            filePositions[file.toRelativeString(dir)] = index
+        }
         indexFile.useLines { lines: Sequence<String> ->
             var buffer = mutableListOf<Array<Int>>()
             var prevHash = -1
@@ -165,7 +183,7 @@ class Indexer(private val directory: String) {
                 val parts = line.split(DELIMITER)
                 val hash = parts[0].toInt()
                 val fileName = parts[1]
-                val filePosition = files.indexOfFirst { it.toRelativeString(dir) == fileName }
+                val filePosition = filePositions[fileName]!!
                 val indices = mutableListOf(filePosition)
                 indices.addAll(parts.drop(2).map { it.toInt() })
 
@@ -177,12 +195,16 @@ class Indexer(private val directory: String) {
                     buffer = mutableListOf(indices.toTypedArray())
                     prevHash = hash
                 }
+
+                linesCount++
+                print("Считано $linesCount строк из файла индекса         \r")
             }
 
             if (prevHash >= 0 && buffer.isNotEmpty()) {
                 index[prevHash] = buffer.toTypedArray()
             }
         }
-        println("index resored")
+        println()
+        println("Индекс восстановлен")
     }
 }
