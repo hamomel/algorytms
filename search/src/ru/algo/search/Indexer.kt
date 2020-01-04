@@ -99,12 +99,11 @@ class Indexer(private val directory: String) {
                 }
             }
             filesCount++
-            print("Проиндексировано $filesCount файлов             \r")
+            print("Проиндексировано $filesCount файлов\r")
         }
 
         println("""
             Проиндексировано $filesCount файлов,
-            из найденных ${files.size},
             найдено ${uniqueWords.size} слов,
             произошло $collisionCount коллизий
             """.trimIndent())

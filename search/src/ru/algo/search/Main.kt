@@ -42,8 +42,8 @@ private fun printResult(results:  List<SearchResult>, dir: File) {
     println("Искомая строка найдена в следующих документах:")
     results.forEach {
         println(it.file.toRelativeString(dir))
-        it.occurrences.forEach {
-            println("позиция: ${it.first().start}")
+        it.phrases.forEach {
+            println("позиция: ${it.key} ${it.value}")
         }
         println()
     }
