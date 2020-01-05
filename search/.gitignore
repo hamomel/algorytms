@@ -24,7 +24,8 @@
 
 # IntelliJ
 out/
-20news-18828/
+test_files/files.tsv
+test_files/index.tsv
 
 ### Kotlin ###
 # Compiled class file
