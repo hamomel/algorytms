@@ -6,8 +6,6 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
 
     fun search(phrase: String): List<SearchResult> {
         val parts = tokenize(phrase)
-        val maxBlankWord = parts.filter { it.isBlank() || it.length < MIN_WORD_LENGTH }.maxBy { it.length }
-        val maxDistance = MAX_WORD_DISTANCE
         val words = parts.filter { it.length >= MIN_WORD_LENGTH && it.isNotBlank() }
         val occurrences = words.map {
             val hash = calculateHash(it.toByteArray())
@@ -40,43 +38,54 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
             }
         }
 
-        val resultWithIndices = searchIndices(words, splitByFile, maxDistance)
+        val resultWithIndices = searchIndices(words, splitByFile)
         return searchPhrases(resultWithIndices)
     }
 
     private fun searchPhrases(resultWithIndices: List<SearchResult>): List<SearchResult> {
         resultWithIndices.forEach { searchResult ->
-            val phrases = mutableMapOf<Int, String>()
+            val phrases = mutableListOf<Phrase>()
             var position = 0
             val phraseCoordinates = searchResult.occurrences.map {
                 val start = it.first().start
                 val end = it.last().end
-                PhraseCoordinates(start, end, end - start)
+                PhraseCoordinates(start, end - start)
             }
+
             var remainedLength = 0
-            var previousCoordinates: PhraseCoordinates? = null
+            var previousPhrase: Phrase? = null
             searchResult.file.useLines { lines ->
-                lines.forEach { line ->
+                lines.forEachIndexed { index,  line ->
                     if (remainedLength > 0) {
-                        previousCoordinates?.let {
-                            phrases[it.start] = phrases[it.start] + line.substring(0..remainedLength)
+                        previousPhrase?.let {
+                            val end = if (remainedLength <= line.length) remainedLength else line.length
+                            val newPhrase = it.copy(text = it.text + line.substring(0 until end))
+                            phrases.add(newPhrase)
                         }
                         remainedLength = 0
-                        previousCoordinates = null
+                        previousPhrase = null
                     }
                     phraseCoordinates.forEach {
-                        if (position <= it.start && position + line.length > it.end) {
+                        if (position <= it.start && position + line.length > it.start) {
                             val start = it.start - position
                             if (line.length - start >= it.length) {
-                                phrases[it.start] = line.substring(start, start + it.length)
+                                val phrase = Phrase(
+                                    line = index + 1,
+                                    position = start,
+                                    text = line.substring(start, start + it.length)
+                                )
+                                phrases.add(phrase)
                             } else {
                                 remainedLength = it.length - (line.length - start)
-                                previousCoordinates = it
-                                phrases[it.start] = line.substring(it.start)
+                                previousPhrase = Phrase(
+                                    line = index + 1,
+                                    position = start,
+                                    text = line.substring(start)
+                                )
                             }
                         }
                     }
-                    position += line.length
+                    position += (line.length + 1) // we need to add 1 because BufferedReader removes "\n" from line
                 }
             }
 
@@ -88,8 +97,7 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
 
     private fun searchIndices(
         words: List<String>,
-        splitByFile: MutableMap<File, MutableList<List<Int>>>,
-        maxDistance: Int
+        splitByFile: MutableMap<File, MutableList<List<Int>>>
     ): List<SearchResult> =
         if (words.size < 2) {
             splitByFile.map {
@@ -104,7 +112,7 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
                 var sequence = mutableListOf<WordCoordinates>()
 
                 for (i in wordIndices[0].indices) {
-                    findNextWord(0, i, wordIndices, words, sequence, maxDistance)
+                    findNextWord(0, i, wordIndices, words, sequence, MAX_WORD_DISTANCE)
                     if (sequence.isNotEmpty()) sequences.add(sequence)
                     sequence = mutableListOf()
                 }

@@ -3,7 +3,7 @@ package ru.algo.search
 import java.io.File
 import java.lang.IllegalArgumentException
 
-const val MIN_WORD_LENGTH = 4
+const val MIN_WORD_LENGTH = 3
 const val MAX_WORD_DISTANCE = 10
 
 fun main(args: Array<String>) {
@@ -43,7 +43,7 @@ private fun printResult(results:  List<SearchResult>, dir: File) {
     results.forEach {
         println(it.file.toRelativeString(dir))
         it.phrases.forEach {
-            println("позиция: ${it.key} ${it.value}")
+            println("стр ${it.line}, поз ${it.position}: ${it.text}")
         }
         println()
     }

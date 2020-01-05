@@ -109,18 +109,6 @@ class Indexer(private val directory: String) {
             """.trimIndent())
         println()
 
-        File(directory, "collisions.tsv").bufferedWriter().use { writer ->
-            hashToWords.forEach {
-                writer.write("${it.key}\t${it.value.joinToString(separator = "\t")}")
-                writer.newLine()
-            }
-        }
-        File(directory, "unique_words.txt").bufferedWriter().use {writer ->
-            uniqueWords.sorted().forEach {
-                writer.write(it)
-                writer.newLine()
-            }
-        }
         saveIndex()
     }
 
