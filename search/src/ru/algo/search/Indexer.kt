@@ -1,7 +1,6 @@
 package ru.algo.search
 
 import java.io.File
-import java.lang.IllegalArgumentException
 import java.util.*
 import kotlin.concurrent.thread
 import kotlin.math.pow
@@ -9,45 +8,40 @@ import kotlin.math.pow
 private const val FILES_NAME = "files.tsv"
 private const val INDEX_NAME = "index.tsv"
 private const val DELIMITER = "\t"
-private val SUPPORTED_FORMATS = arrayOf("txt", "json")
+private val SUPPORTED_FORMATS = arrayOf("txt")
 
 class Indexer(private val directory: String) {
     val index = arrayOfNulls<Array<Array<Int>>>(2.0.pow(16).toInt())
     var files = emptyArray<File>()
         private set
 
-    private var wordsCount = 0
-    private var collisionCount = 0
-    private var filesCount = 0
-    private var linesCount = 0
-
     fun checkIndex() {
         val dir = File(directory)
-        if (!dir.exists() && !dir.isDirectory) {
+        if (!dir.exists() || !dir.isDirectory) {
             throw IllegalArgumentException("$directory does not exist or is a plain file")
         }
-        files = getSupportedFiles(dir)
-        val filesList = File(dir, FILES_NAME)
+
+        files = dir.getFilesRecursively(mutableListOf())
+            .filter { it.extension.toLowerCase() in SUPPORTED_FORMATS }
+            .toTypedArray()
+
+        val filesFile = File(dir, FILES_NAME)
         val indexFile = File(dir, INDEX_NAME)
 
-        if (!filesList.exists() || !indexFile.exists()) {
+        if (!filesFile.exists() || !indexFile.exists()) {
             println("Файлов индекса не найдено, начинаем полную индексацию")
             indexAll()
         } else {
-            val savedFiles = getSavedFilesIfNotChanged(dir, filesList)
+            val savedFiles = getSavedFilesIfNotChanged(dir, filesFile)
             if (savedFiles != null && files.size == savedFiles.size) {
                 println("Файлы не изменились, восстанавливаем индекс с диска")
-                fillIndex(indexFile, dir)
+                fillIndexFromFile(indexFile, dir)
             } else {
                 println("Файлы изменены, начинаем полную индексацию")
                 indexAll()
             }
         }
     }
-
-    private fun getSupportedFiles(dir: File) = dir.getFilesRecursively(mutableListOf())
-        .filter { it.extension.toLowerCase() in SUPPORTED_FORMATS }
-        .toTypedArray()
 
     private fun getSavedFilesIfNotChanged(dir: File, filesList: File): Array<File>? {
         return filesList.readLines()
@@ -62,20 +56,23 @@ class Indexer(private val directory: String) {
     }
 
     private fun indexAll() {
+        var collisionCount = 0
+        var filesCount = 0
         val hashToWords = mutableMapOf<Int, MutableSet<String>>()
         val uniqueWords = mutableSetOf<String>()
+
         files.forEachIndexed { filePosition, file ->
             var position = 0
             file.useLines { lines: Sequence<String> ->
                 lines.forEach { line ->
-                    val parts = tokenize(line)
+                    val parts = removeSigns(line)
                     parts.forEach { word ->
                         if (word.isNotBlank() && word.length >= MIN_WORD_LENGTH) {
                             uniqueWords.add(word)
                             val hash = calculateHash(word.toByteArray())
                             if (hashToWords[hash] == null) {
                                 hashToWords[hash] = mutableSetOf(word)
-                            } else if (hashToWords[hash]?.contains(word) != true) {
+                            } else if (!hashToWords[hash]!!.contains(word)) {
                                 hashToWords[hash]?.add(word)
                                 collisionCount++
                             }
@@ -94,7 +91,7 @@ class Indexer(private val directory: String) {
                             }
                         }
 
-                        position += word.length + 1
+                        position += word.length + 1 // add 1 instead of space after
                     }
                 }
             }
@@ -102,27 +99,26 @@ class Indexer(private val directory: String) {
             print("Проиндексировано $filesCount файлов\r")
         }
 
+        saveIndex()
+
         println("""
             Проиндексировано $filesCount файлов,
             найдено ${uniqueWords.size} слов,
             произошло $collisionCount коллизий
             """.trimIndent())
         println()
-
-        saveIndex()
     }
 
+    @Suppress("ReplaceJavaStaticMethodWithKotlinAnalog")
     private fun insertSorted(indexArray: Array<Int>, position: Int): Array<Int> {
         val newArray = Arrays.copyOf(indexArray, indexArray.size + 1)
-        var i = newArray.size - 1
-        while (i > 0) {
+        for (i in newArray.size - 1 downTo 1) {
             if (i == 1 || newArray[i - 1] < position) {
                 newArray[i] = position
                 break
             } else {
                 newArray[i] = newArray[i - 1]
             }
-            i--
         }
 
         return newArray
@@ -157,15 +153,19 @@ class Indexer(private val directory: String) {
         }
     }
 
-    private fun fillIndex(indexFile: File, dir: File) {
+    private fun fillIndexFromFile(indexFile: File, dir: File) {
+        var linesCount = 0
         val filePositions = mutableMapOf<String, Int>()
+
         files.forEachIndexed { index, file ->
             filePositions[file.toRelativeString(dir)] = index
         }
+
         indexFile.useLines { lines: Sequence<String> ->
             var buffer = mutableListOf<Array<Int>>()
             var prevHash = -1
 
+            // each line contains: "word hash \t file name \t list of positions of the word in the file"
             lines.forEach { line ->
                 val parts = line.split(DELIMITER)
                 val hash = parts[0].toInt()
@@ -174,6 +174,8 @@ class Indexer(private val directory: String) {
                 val indices = mutableListOf(filePosition)
                 indices.addAll(parts.drop(2).map { it.toInt() })
 
+                // fill buffer with array for each file
+                // until hash is the same in order to put entire buffer to one slot in index array
                 if (buffer.isEmpty() || hash == prevHash) {
                     buffer.add(indices.toTypedArray())
                     prevHash = hash
@@ -184,9 +186,10 @@ class Indexer(private val directory: String) {
                 }
 
                 linesCount++
-                print("Считано $linesCount строк из файла индекса         \r")
+                print("Считано $linesCount строк из файла индекса\r")
             }
 
+            // save last buffer
             if (prevHash >= 0 && buffer.isNotEmpty()) {
                 index[prevHash] = buffer.toTypedArray()
             }

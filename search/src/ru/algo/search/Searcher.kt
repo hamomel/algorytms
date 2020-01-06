@@ -5,7 +5,7 @@ import java.io.File
 class Searcher(private val files: Array<File>, private val index: Array<Array<Array<Int>>?>) {
 
     fun search(phrase: String): List<SearchResult> {
-        val parts = tokenize(phrase)
+        val parts = removeSigns(phrase)
         val words = parts.filter { it.length >= MIN_WORD_LENGTH && it.isNotBlank() }
         val occurrences = words.map {
             val hash = calculateHash(it.toByteArray())

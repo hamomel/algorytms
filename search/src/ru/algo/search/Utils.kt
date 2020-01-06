@@ -37,7 +37,7 @@ fun File.getFilesRecursively(files: MutableList<File>): List<File> {
     return files
 }
 
-fun tokenize(text: String): List<String> =
+fun removeSigns(text: String): List<String> =
     text.toLowerCase()
         .replace(NOT_LETTERS_OR_DIGITS, " ")
         .split(" ")

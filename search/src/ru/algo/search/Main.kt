@@ -1,7 +1,6 @@
 package ru.algo.search
 
 import java.io.File
-import java.lang.IllegalArgumentException
 
 const val MIN_WORD_LENGTH = 3
 const val MAX_WORD_DISTANCE = 10
@@ -22,19 +21,15 @@ fun main(args: Array<String>) {
     val searcher = Searcher(files, index)
 
     while (true) {
-        val input = promptUser()
+        println("Введите строку для поиска:")
+        val input = readLine()!!
         if (input.toLowerCase() == "exit" || input.toLowerCase() == "выход") break
         val found = searcher.search(input)
         printResult(found, File(directory))
     }
 }
 
-private fun promptUser(): String {
-    println("Введите строку для поиска:")
-    return readLine()!!
-}
-
-private fun printResult(results:  List<SearchResult>, dir: File) {
+private fun printResult(results: List<SearchResult>, dir: File) {
     if (results.isEmpty()) {
         println("Строка не найдена")
         return
