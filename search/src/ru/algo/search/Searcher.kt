@@ -12,11 +12,11 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
             return@map index[hash] ?: emptyArray()
         }
 
-        // file indices in which all words are present
+        // indices of files in which all words are present
         val uniqueFileIndices = mutableSetOf<Int>()
-        occurrences.forEachIndexed { i, indexForWord ->
-            val fileIndices = indexForWord.map { it[0] }
-            if (i == 0) {
+        occurrences.forEach { occurrence ->
+            val fileIndices = occurrence.map { it[0] }
+            if (uniqueFileIndices.isEmpty()) {
                 uniqueFileIndices.addAll(fileIndices)
             } else {
                 uniqueFileIndices.retainAll(fileIndices)
@@ -27,8 +27,8 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
         val splitByFile = mutableMapOf<File, MutableList<List<Int>>>()
         occurrences.map { array ->
             array.filter { uniqueFileIndices.contains(it[0]) }
-        }.forEach { indexForWord ->
-            indexForWord.forEach {
+        }.forEach { occurrence ->
+            occurrence.forEach {
                 val fileName = files[it[0]]
                 if (splitByFile[fileName] == null) {
                     splitByFile[fileName] = mutableListOf(it.drop(1))
@@ -39,22 +39,50 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
         }
 
         val resultWithIndices = searchIndices(words, splitByFile)
+
         return searchPhrases(resultWithIndices)
     }
 
-    private fun searchPhrases(resultWithIndices: List<SearchResult>): List<SearchResult> {
+    private fun searchIndices(
+        words: List<String>,
+        splitByFile: MutableMap<File, MutableList<List<Int>>>
+    ): Map<File, List<List<WordCoordinates>>> =
+        if (words.size < 2) {
+            splitByFile.mapValues {
+                it.value[0].map { listOf(WordCoordinates(it, it + words[0].length)) }
+            }
+        } else {
+            // map file names to sequence of indices of phrase's words in it
+            splitByFile.mapValues { entry ->
+                val wordIndices = entry.value
+                val sequences = mutableListOf<List<WordCoordinates>>()
+                var sequence = mutableListOf<WordCoordinates>()
+
+                for (i in wordIndices[0].indices) {
+                    findNextWord(0, i, wordIndices, words, sequence, MAX_WORD_DISTANCE)
+                    if (sequence.isNotEmpty()) sequences.add(sequence)
+                    sequence = mutableListOf()
+                }
+                return@mapValues sequences
+            }.filter {
+                it.value.isNotEmpty()
+            }
+        }
+
+    private fun searchPhrases(resultWithIndices: Map<File, List<List<WordCoordinates>>>): List<SearchResult> {
+        val result = mutableListOf<SearchResult>()
         resultWithIndices.forEach { searchResult ->
             val phrases = mutableListOf<Phrase>()
             var position = 0
-            val phraseCoordinates = searchResult.occurrences.map {
+            val phraseCoordinates = searchResult.value.map {
                 val start = it.first().start
                 val end = it.last().end
-                PhraseCoordinates(start, end - start)
+                start to end - start
             }
 
             var remainedLength = 0
             var previousPhrase: Phrase? = null
-            searchResult.file.useLines { lines ->
+            searchResult.key.useLines { lines ->
                 lines.forEachIndexed { index,  line ->
                     if (remainedLength > 0) {
                         previousPhrase?.let {
@@ -65,18 +93,18 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
                         remainedLength = 0
                         previousPhrase = null
                     }
-                    phraseCoordinates.forEach {
-                        if (position <= it.start && position + line.length > it.start) {
-                            val start = it.start - position
-                            if (line.length - start >= it.length) {
+                    phraseCoordinates.forEach { phraseCoordinates ->
+                        if (position <= phraseCoordinates.first && position + line.length > phraseCoordinates.first) {
+                            val start = phraseCoordinates.first - position
+                            if (line.length - start >= phraseCoordinates.second) {
                                 val phrase = Phrase(
                                     line = index + 1,
                                     position = start,
-                                    text = line.substring(start, start + it.length)
+                                    text = line.substring(start, start + phraseCoordinates.second)
                                 )
                                 phrases.add(phrase)
                             } else {
-                                remainedLength = it.length - (line.length - start)
+                                remainedLength = phraseCoordinates.second - (line.length - start)
                                 previousPhrase = Phrase(
                                     line = index + 1,
                                     position = start,
@@ -89,38 +117,11 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
                 }
             }
 
-            searchResult.phrases = phrases
+            result.add(SearchResult(searchResult.key, phrases))
         }
 
-        return resultWithIndices
+        return result
     }
-
-    private fun searchIndices(
-        words: List<String>,
-        splitByFile: MutableMap<File, MutableList<List<Int>>>
-    ): List<SearchResult> =
-        if (words.size < 2) {
-            splitByFile.map {
-                val phrases = it.value[0].map { listOf(WordCoordinates(it, it + words[0].length)) }
-                SearchResult(it.key, phrases)
-            }
-        } else {
-            // map file names to sequence of indices of phrase's words in it
-            splitByFile.map { entry ->
-                val wordIndices = entry.value
-                val sequences = mutableListOf<List<WordCoordinates>>()
-                var sequence = mutableListOf<WordCoordinates>()
-
-                for (i in wordIndices[0].indices) {
-                    findNextWord(0, i, wordIndices, words, sequence, MAX_WORD_DISTANCE)
-                    if (sequence.isNotEmpty()) sequences.add(sequence)
-                    sequence = mutableListOf()
-                }
-                return@map SearchResult(entry.key, sequences)
-            }.filter {
-                it.occurrences.isNotEmpty()
-            }
-        }
 
     private fun findNextWord(
         wordIndex: Int,

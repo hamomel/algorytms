@@ -35,7 +35,9 @@ private fun printResult(results: List<SearchResult>, dir: File) {
         return
     }
     println("Искомая строка найдена в следующих документах:")
-    results.forEach {
+    results.sortedBy {
+        it.phrases.minBy { it.text.length }?.text?.length
+    }.forEach {
         println(it.file.toRelativeString(dir))
         it.phrases.forEach {
             println("стр ${it.line}, поз ${it.position}: ${it.text}")
