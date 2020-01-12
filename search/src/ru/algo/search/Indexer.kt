@@ -25,6 +25,12 @@ class Indexer(private val directory: String) {
             .filter { it.extension.toLowerCase() in SUPPORTED_FORMATS }
             .toTypedArray()
 
+        if (files.isEmpty()) {
+            println("В указанной папке не найдено файлов для индекса.\n" +
+                    "Программа может работать только с файлами формата .txt в кодировке UTF-8")
+            return
+        }
+
         val filesFile = File(dir, FILES_NAME)
         val indexFile = File(dir, INDEX_NAME)
 

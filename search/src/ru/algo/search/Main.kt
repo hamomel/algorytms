@@ -6,7 +6,18 @@ const val MIN_WORD_LENGTH = 3
 const val MAX_WORD_DISTANCE = 10
 
 fun main(args: Array<String>) {
-    val directory = args[0]
+
+    val directory = try {
+        if (args[0].startsWith("~")) {
+            val homeDir = System.getProperty("user.home")
+            args[0].replace("~", homeDir)
+        } else {
+            args[0]
+        }
+    } catch (e: ArrayIndexOutOfBoundsException) {
+        println("Программа должна запускаться с параметром указывающим на папку для индексирования")
+        return
+    }
 
     val indexer = Indexer(directory)
     try {
@@ -17,6 +28,8 @@ fun main(args: Array<String>) {
     }
 
     val files = indexer.files
+    if (files.isEmpty()) return
+
     val index = indexer.index
     val searcher = Searcher(files, index)
 
