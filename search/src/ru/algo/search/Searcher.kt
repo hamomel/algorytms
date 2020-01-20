@@ -39,8 +39,8 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
         }
 
         val resultWithIndices = searchIndices(words, splitByFile)
-
-        return searchPhrases(resultWithIndices)
+        val phrases = searchPhrases(resultWithIndices, parts.filter { it.isNotBlank() })
+        return phrases.filter { it.phrases.isNotEmpty() }
     }
 
     private fun searchIndices(
@@ -69,7 +69,7 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
             }
         }
 
-    private fun searchPhrases(resultWithIndices: Map<File, List<List<WordCoordinates>>>): List<SearchResult> {
+    private fun searchPhrases(resultWithIndices: Map<File, List<List<WordCoordinates>>>, words: List<String>): List<SearchResult> {
         val result = mutableListOf<SearchResult>()
         resultWithIndices.forEach { searchResult ->
             val phrases = mutableListOf<Phrase>()
@@ -77,7 +77,7 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
             val phraseCoordinates = searchResult.value.map {
                 val start = it.first().start
                 val end = it.last().end
-                start to end - start
+                start to end
             }
 
             var remainedLength = 0
@@ -94,22 +94,39 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
                         previousPhrase = null
                     }
                     phraseCoordinates.forEach { phraseCoordinates ->
-                        if (position <= phraseCoordinates.first && position + line.length > phraseCoordinates.first) {
-                            val start = phraseCoordinates.first - position
-                            if (line.length - start >= phraseCoordinates.second) {
-                                val phrase = Phrase(
-                                    line = index + 1,
-                                    position = start,
-                                    text = line.substring(start, start + phraseCoordinates.second)
-                                )
-                                phrases.add(phrase)
+                        val searchStart = when {
+                            words.first().length > 2 -> phraseCoordinates.first
+                            phraseCoordinates.first >= MAX_WORD_DISTANCE -> phraseCoordinates.first - MAX_WORD_DISTANCE
+                            else -> 0
+                        }
+
+                        if (position <= searchStart && position + line.length > searchStart) {
+                            val startInLine = if (searchStart == phraseCoordinates.first) {
+                                searchStart - position
                             } else {
-                                remainedLength = phraseCoordinates.second - (line.length - start)
-                                previousPhrase = Phrase(
-                                    line = index + 1,
-                                    position = start,
-                                    text = line.substring(start)
-                                )
+                                val phrasePrefixStart = searchStart - position
+                                val prefix = line.substring(phrasePrefixStart, phrasePrefixStart + MAX_WORD_DISTANCE)
+                                val indexInPrefix = prefix.indexOf(words[0])
+                                if (indexInPrefix > 0) phrasePrefixStart + indexInPrefix else indexInPrefix
+                            }
+
+                            val length = phraseCoordinates.second - (position + startInLine)
+                            if (startInLine >= 0) {
+                                if (line.length - startInLine >= length) {
+                                    val phrase = Phrase(
+                                        line = index + 1,
+                                        position = startInLine,
+                                        text = line.substring(startInLine, startInLine + length)
+                                    )
+                                    phrases.add(phrase)
+                                } else {
+                                    remainedLength = length - (line.length - startInLine)
+                                    previousPhrase = Phrase(
+                                        line = index + 1,
+                                        position = startInLine,
+                                        text = line.substring(startInLine)
+                                    )
+                                }
                             }
                         }
                     }
@@ -121,6 +138,18 @@ class Searcher(private val files: Array<File>, private val index: Array<Array<Ar
         }
 
         return result
+    }
+
+    private fun String.indexOf(searchPhrase: String): Int {
+        var index = 0
+        while (index >= 0 && index + searchPhrase.length < this.length) {
+            if (substring(index, index + searchPhrase.length).toLowerCase() == searchPhrase) {
+                return index
+            }
+            index = indexOf(searchPhrase[0], index + 1, true)
+        }
+
+        return -1
     }
 
     private fun findNextWord(
